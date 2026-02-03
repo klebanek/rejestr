@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INOVIT - System HACCP v6.3 (Audit Ready)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        /* STYL V2/V4/V5 - TURKUS I ANIMACJE */
+        :root {
+            --primary: #004F5D;
+            --secondary: #007380;
+            --accent: #0ea5e9;
+            --bg-light: #f0f9fa;
+        }
+        body { font-family: 'Inter', 'Segoe UI', sans-serif; background-color: #f8fafc; }
+        
+        .fade-in { animation: fadeIn 0.5s ease-out forwards; opacity: 0; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .hover-scale { transition: all 0.3s ease; }
+        .hover-scale:hover { transform: translateY(-3px); box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1); }
+
+        .tab-btn { color: #64748b; border-bottom: 3px solid transparent; transition: all 0.3s; cursor: pointer; }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 700; }
+        .tab-btn:hover:not(.active) { color: var(--secondary); background-color: #f1f5f9; }
+
+        .btn-primary { background-color: var(--primary); color: white; transition: background-color 0.3s; }
+        .btn-primary:hover { background-color: var(--secondary); box-shadow: 0 4px 12px rgba(0, 79, 93, 0.3); }
+
+        .radio-card { border: 2px solid #e2e8f0; transition: all 0.2s; cursor: pointer; }
+        .radio-card:hover { border-color: var(--secondary); }
+        input:checked + .radio-card { border-color: var(--primary); background-color: var(--bg-light); color: var(--primary); }
+        
+        .progress-bar { height: 8px; border-radius: 4px; background-color: #e2e8f0; overflow: hidden; }
+        .progress-fill { height: 100%; background-color: var(--primary); transition: width 0.6s ease; }
+
+        .table-header { background-color: var(--primary); color: white; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        tr:hover td { background-color: #f1f5f9; }
+        
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 50; backdrop-filter: blur(3px); }
+    </style>
+</head>
+<body class="text-slate-800 flex flex-col min-h-screen">
+
+    <header class="bg-gradient-to-r from-[#004F5D] to-[#007380] shadow-lg text-white sticky top-0 z-40">
+        <div class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-white/10 backdrop-blur-sm p-2 rounded-lg border border-white/20 shadow-inner">
+                    <i class="fas fa-shield-virus text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">INOVIT / ELMAR</h1>
+                    <p class="text-[11px] text-blue-100 opacity-90 uppercase tracking-wide">System Nadzoru Weterynaryjnego v6.3</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="text-[10px] opacity-70 uppercase tracking-widest">Dzisiaj</div>
+                <div id="current-date" class="font-bold font-mono text-sm"></div>
+            </div>
+        </div>
+    </header>
+
+    <div class="bg-white shadow-sm border-b border-gray-100 sticky top-14 z-30">
+        <div class="container mx-auto px-6">
+            <nav class="flex gap-8 overflow-x-auto">
+                <button onclick="switchTab('dashboard')" id="btn-dashboard" class="tab-btn active py-4 flex items-center gap-2 whitespace-nowrap">
+                    <i class="fas fa-columns"></i> Pulpit
+                </button>
+                <button onclick="switchTab('schedule')" id="btn-schedule" class="tab-btn py-4 flex items-center gap-2 whitespace-nowrap">
+                    <i class="fas fa-calendar-alt"></i> Plan Badań
+                </button>
+                <button onclick="switchTab('add-entry')" id="btn-add-entry" class="tab-btn py-4 flex items-center gap-2 whitespace-nowrap">
+                    <i class="fas fa-plus-circle"></i> Nowe Badanie
+                </button>
+                <button onclick="switchTab('register')" id="btn-register" class="tab-btn py-4 flex items-center gap-2 whitespace-nowrap">
+                    <i class="fas fa-table"></i> Pełny Rejestr
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <main class="container mx-auto px-6 py-8 flex-grow">
+
+        <div id="view-dashboard" class="fade-in space-y-6">
+            <div id="trend-alerts"></div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="bg-white p-5 rounded-xl shadow border-l-4 border-green-500 hover-scale cursor-default">
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Wyniki Zgodne</p>
+                    <h3 class="text-3xl font-bold text-green-700 mt-1" id="stat-ok">0</h3>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow border-l-4 border-red-500 hover-scale cursor-default">
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Niezgodne</p>
+                    <h3 class="text-3xl font-bold text-red-700 mt-1" id="stat-fail">0</h3>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow border-l-4 border-[#007380] hover-scale cursor-default">
+                    <div class="flex justify-between">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Realizacja Planu (<span id="dashboard-year-label"></span>)</p>
+                        <i class="fas fa-tasks text-[#007380]"></i>
+                    </div>
+                    <h3 class="text-3xl font-bold text-[#004F5D] mt-1" id="stat-plan-progress">0%</h3>
+                    <div class="w-full bg-gray-100 rounded-full h-1.5 mt-2">
+                        <div class="bg-[#007380] h-1.5 rounded-full" id="progress-bar-visual" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow border-l-4 border-gray-400 hover-scale cursor-default">
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Ostatni wpis</p>
+                    <h3 class="text-lg font-bold text-gray-700 mt-2 font-mono" id="stat-last-date">-</h3>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="md:col-span-2 bg-white p-6 rounded-xl shadow hover-scale">
+                    <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-3">
+                        <h3 class="font-bold text-lg text-[#004F5D]">Analiza Trendu</h3>
+                        <select id="chartFilter" onchange="updateDashboard()" class="text-xs border rounded p-1 bg-gray-50">
+                            <option value="shelf_life">L. monocytogenes (jtk/g)</option>
+                            <option value="histamine">Histamina (mg/kg)</option>
+                            <option value="wwa">WWA (µg/kg)</option>
+                            <option value="Ogólna liczba drobnoustrojów">Ogólna liczba drobnoustrojów</option>
+                            <option value="Ogólna liczba 22C">Woda - Ogólna l. 22C</option>
+                        </select>
+                    </div>
+                    <canvas id="trendChart" height="140"></canvas>
+                </div>
+
+                <div class="bg-[#004F5D] text-white p-6 rounded-xl shadow flex flex-col justify-center items-center text-center relative overflow-hidden hover-scale">
+                    <i class="fas fa-chart-line text-9xl absolute text-white opacity-5 -right-6 -bottom-6"></i>
+                    <h4 class="text-xl font-bold mb-2 z-10">Monitoring Mikrobiologiczny</h4>
+                    <p class="text-sm opacity-80 mb-6 z-10">System analizuje 3 ostatnie wyniki mikrobiologiczne dla grup technologicznych.</p>
+                    <div class="bg-white/10 p-4 rounded-lg w-full backdrop-blur-sm border border-white/10 z-10">
+                        <div class="text-4xl font-bold text-yellow-400" id="stat-trend-count">0</div>
+                        <div class="text-xs uppercase tracking-wide opacity-80 mt-1">Aktywne Ostrzeżenia</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-schedule" class="hidden fade-in space-y-6">
+            <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow">
+                <div>
+                    <h2 class="text-xl font-bold text-[#004F5D]">Plany Badań</h2>
+                    <p class="text-xs text-gray-500">Zarządzanie harmonogramami rocznymi</p>
+                </div>
+                <button onclick="openNewPlanModal()" class="btn-primary px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2">
+                    <i class="fas fa-folder-plus"></i> Utwórz Nowy Plan
+                </button>
+            </div>
+
+            <div id="plansContainer" class="space-y-8">
+                </div>
+        </div>
+
+        <div id="view-add-entry" class="hidden fade-in max-w-4xl mx-auto">
+            <div class="bg-white p-8 rounded-xl shadow-lg border-t-8 border-[#004F5D]">
+                <div class="flex justify-between items-center mb-8 border-b pb-4">
+                    <h2 class="text-2xl font-bold text-[#004F5D]" id="formTitle">Nowe Badanie</h2>
+                    <button onclick="resetForm()" class="text-gray-400 hover:text-red-500 text-sm transition"><i class="fas fa-undo mr-1"></i> Resetuj / Anuluj</button>
+                </div>
+                
+                <form id="haccpForm" onsubmit="saveEntry(event)">
+                    <input type="hidden" id="entryId">
+
+                    <div class="grid grid-cols-3 gap-4 mb-6">
+                        <label>
+                            <input type="radio" name="sampleType" value="product" checked onclick="renderFormOptions('form')" class="hidden">
+                            <div class="radio-card p-4 rounded-lg text-center h-full flex flex-col items-center justify-center gap-2">
+                                <i class="fas fa-fish text-2xl text-gray-400 icon-box"></i>
+                                <span class="font-bold text-sm">Produkt</span>
+                            </div>
+                        </label>
+                        <label>
+                            <input type="radio" name="sampleType" value="environment" onclick="renderFormOptions('form')" class="hidden">
+                            <div class="radio-card p-4 rounded-lg text-center h-full flex flex-col items-center justify-center gap-2">
+                                <i class="fas fa-pump-soap text-2xl text-gray-400 icon-box"></i>
+                                <span class="font-bold text-sm">Środowisko</span>
+                            </div>
+                        </label>
+                        <label>
+                            <input type="radio" name="sampleType" value="water" onclick="renderFormOptions('form')" class="hidden">
+                            <div class="radio-card p-4 rounded-lg text-center h-full flex flex-col items-center justify-center gap-2">
+                                <i class="fas fa-tint text-2xl text-gray-400 icon-box"></i>
+                                <span class="font-bold text-sm">Woda</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-bold mb-1">Nazwa / Punkt pobrania</label>
+                            <input type="text" id="itemName" class="w-full p-3 border rounded-lg" required>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-bold mb-1">Grupa / Obszar</label>
+                            <select id="itemGroup" class="w-full p-3 border rounded-lg bg-gray-50" onchange="updateCriteriaSelect('form')">
+                                </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold mb-1">Kryterium / Parametr</label>
+                            <select id="itemCriteria" class="w-full p-3 border rounded-lg" onchange="toggleResultInput()">
+                                </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4 mb-6 border-t pt-4">
+                        <div>
+                            <label class="block text-sm font-bold mb-1">Data badania</label>
+                            <input type="date" id="testDate" required class="w-full p-3 border rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold mb-1">Nr Raportu</label>
+                            <input type="text" id="reportId" class="w-full p-3 border rounded-lg">
+                        </div>
+                        <div id="batchContainer">
+                            <label class="block text-sm font-bold mb-1">Partia (LOT)</label>
+                            <input type="text" id="batchId" class="w-full p-3 border rounded-lg">
+                        </div>
+                    </div>
+
+                    <div class="mt-4 bg-gray-50 p-4 rounded-lg border">
+                        <label class="block font-bold text-[#004F5D] mb-2">Wynik Analizy</label>
+                        
+                        <div id="resNum" class="hidden flex items-center gap-4">
+                            <input type="number" id="valNum" class="w-40 p-3 text-2xl font-bold text-right border rounded" placeholder="0" step="0.01" oninput="validateResult()">
+                            <span id="unitLabel" class="font-bold text-gray-600">jtk/g</span>
+                        </div>
+
+                        <div id="resBin" class="hidden">
+                            <select id="valBin" class="w-full p-3 text-lg font-bold border rounded" onchange="validateResult()">
+                                <option value="absent">✅ Nie wykryto (Zgodny)</option>
+                                <option value="present">⛔ WYKRYTO (Niezgodny)</option>
+                            </select>
+                        </div>
+
+                        <div id="statusPreview" class="mt-3 text-sm font-bold"></div>
+                    </div>
+
+                    <div id="correctiveArea" class="hidden mt-4 bg-red-50 p-4 border-l-4 border-red-500 rounded">
+                        <label class="block text-red-800 font-bold mb-1">Wymagane Działania Korygujące</label>
+                        <textarea id="correctiveActions" class="w-full p-2 border border-red-200 rounded" rows="2"></textarea>
+                    </div>
+
+                    <button type="submit" id="submitBtn" class="w-full mt-6 btn-primary py-3 rounded-lg font-bold shadow-lg">Zapisz</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="view-register" class="hidden fade-in space-y-4">
+            <div class="bg-white p-4 rounded-xl shadow flex justify-between gap-4 flex-wrap">
+                <input type="text" id="searchTable" onkeyup="renderTable()" placeholder="Szukaj..." class="p-2 border rounded-lg w-64">
+                <div class="flex gap-2">
+                    <button onclick="exportToCSV()" class="bg-green-600 text-white px-4 py-2 rounded-lg font-bold text-sm"><i class="fas fa-file-excel mr-2"></i> Eksport</button>
+                </div>
+            </div>
+            <div class="bg-white shadow rounded-lg overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="table-header">
+                        <tr>
+                            <th class="py-3 px-4 text-left">Data</th>
+                            <th class="py-3 px-4 text-left">Produkt / Punkt</th>
+                            <th class="py-3 px-4 text-left">Parametr</th>
+                            <th class="py-3 px-4 text-center">Wynik</th>
+                            <th class="py-3 px-4 text-center">Status</th>
+                            <th class="py-3 px-4 text-left">Działania</th>
+                            <th class="py-3 px-4 text-center">Opcje</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="text-gray-700"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <div id="modalNewPlan" class="modal hidden">
+        <div class="modal-content bg-white p-6 rounded-xl shadow-2xl fade-in w-80">
+            <h3 class="font-bold text-lg mb-4">Utwórz Nowy Plan</h3>
+            <label class="block text-sm mb-1">Rok Planu</label>
+            <input type="number" id="newPlanYear" class="w-full p-2 border rounded mb-4" value="2025">
+            <div class="flex justify-end gap-2">
+                <button onclick="document.getElementById('modalNewPlan').classList.add('hidden')" class="px-4 py-2 text-gray-500">Anuluj</button>
+                <button onclick="createNewPlan()" class="btn-primary px-4 py-2 rounded">Utwórz</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalAddItem" class="modal hidden">
+        <div class="modal-content bg-white p-8 rounded-xl w-full max-w-lg shadow-2xl fade-in">
+            <h3 class="text-xl font-bold mb-6 text-[#004F5D]">Dodaj do Planu <span id="modalPlanYear"></span></h3>
+            <form onsubmit="addItemToPlan(event)">
+                <input type="hidden" id="targetPlanId">
+                
+                <div class="grid grid-cols-3 gap-2 mb-4">
+                    <label>
+                        <input type="radio" name="planType" value="product" checked onclick="renderFormOptions('plan')" class="hidden">
+                        <div class="radio-card p-2 rounded text-center text-xs font-bold">Produkt</div>
+                    </label>
+                    <label>
+                        <input type="radio" name="planType" value="environment" onclick="renderFormOptions('plan')" class="hidden">
+                        <div class="radio-card p-2 rounded text-center text-xs font-bold">Środowisko</div>
+                    </label>
+                    <label>
+                        <input type="radio" name="planType" value="water" onclick="renderFormOptions('plan')" class="hidden">
+                        <div class="radio-card p-2 rounded text-center text-xs font-bold">Woda</div>
+                    </label>
+                </div>
+
+                <div class="mb-3">
+                    <label class="block text-sm font-bold mb-1">Grupa / Obszar</label>
+                    <select id="planGroup" class="w-full p-2 border rounded bg-gray-50" onchange="updateCriteriaSelect('plan')"></select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="block text-sm font-bold mb-1">Kryterium</label>
+                    <select id="planCriteria" class="w-full p-2 border rounded"></select>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-bold mb-1">Planowana Ilość (Rok)</label>
+                    <input type="number" id="planFreq" class="w-full p-2 border rounded" min="1" value="1" required>
+                </div>
+
+                <div class="flex justify-end gap-2">
+                    <button type="button" onclick="closeAddItemModal()" class="px-4 py-2 text-gray-500">Anuluj</button>
+                    <button type="submit" class="btn-primary px-4 py-2 rounded font-bold">Dodaj</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // --- SECURITY UTILS ---
+        function escapeHtml(text) {
+            if (text === null || text === undefined) return '';
+            return text.toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function formatPLDate(iso) {
+            if (!iso || !iso.includes('-')) return iso;
+            const [y, m, d] = iso.split('-');
+            return `${d}.${m}.${y}`;
+        }
+
+        // --- LOGIC CONFIGURATION ---
+        const LOGIC_MAP = {
+            product: {
+                groups: ['Ryby wędzone', 'Ryby marynowane', 'Ryby solone', 'Garmażerka', 'Inne'],
+                criteria: {
+                    'Ryby wędzone': [
+                        {val: 'shelf_life', txt: 'L. mono - Ilościowo (<100 jtk/g)'},
+                        {val: 'process_hygiene', txt: 'L. mono - Obecność (w 25g)'},
+                        {val: 'histamine', txt: 'Histamina (Chemia)'},
+                        {val: 'wwa', txt: 'WWA / Benzo(a)piren'}
+                    ],
+                    'Ryby marynowane': [
+                        {val: 'shelf_life', txt: 'L. mono - Ilościowo'},
+                        {val: 'process_hygiene', txt: 'L. mono - Obecność'},
+                        {val: 'histamine', txt: 'Histamina'} // Brak WWA
+                    ],
+                    'Ryby solone': [
+                        {val: 'shelf_life', txt: 'L. mono - Ilościowo'},
+                        {val: 'process_hygiene', txt: 'L. mono - Obecność'},
+                        {val: 'histamine', txt: 'Histamina'}
+                    ],
+                    'Garmażerka': [
+                        {val: 'shelf_life', txt: 'L. mono - Ilościowo'},
+                        {val: 'process_hygiene', txt: 'L. mono - Obecność'}
+                    ],
+                    'Inne': [
+                        {val: 'shelf_life', txt: 'L. mono - Ilościowo'},
+                        {val: 'process_hygiene', txt: 'L. mono - Obecność'}
+                    ]
+                }
+            },
+            environment: {
+                groups: ['Duże powierzchnie', 'Drobny sprzęt / Ręce'],
+                criteria: {
+                    'Duże powierzchnie': [
+                        {val: 'L. monocytogenes', txt: 'L. monocytogenes'},
+                        {val: 'Ogólna liczba drobnoustrojów', txt: 'Ogólna liczba drobnoustrojów'},
+                        {val: 'Enterobacteriaceae', txt: 'Enterobacteriaceae'}
+                    ],
+                    'Drobny sprzęt / Ręce': [
+                        {val: 'L. monocytogenes', txt: 'L. monocytogenes'},
+                        {val: 'Ogólna liczba drobnoustrojów', txt: 'Ogólna liczba drobnoustrojów'},
+                        {val: 'Enterobacteriaceae', txt: 'Enterobacteriaceae'},
+                        {val: 'Salmonella', txt: 'Salmonella'}
+                    ]
+                }
+            },
+            water: {
+                groups: ['Woda'],
+                criteria: {
+                    'Woda': [
+                        {val: 'E. coli', txt: 'E. coli / Enterokoki'},
+                        {val: 'Ogólna liczba 22C', txt: 'Ogólna liczba 22C'}
+                    ]
+                }
+            }
+        };
+
+        const LIMITS_MAP = {
+            'shelf_life': { max: 100 },           
+            'histamine': { max: 200 },           
+            'wwa': { max: 5 },                   
+            'Ogólna liczba drobnoustrojów': { max: 1000 },
+            'Ogólna liczba 22C': { max: 1000 },
+            'Enterobacteriaceae': { max: 10 },
+            'E. coli': { max: 0 }
+        };
+
+        const DB_KEY = 'haccp_db_v6';
+        const PLAN_KEY = 'haccp_plans_v6';
+
+        let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+        let plans = JSON.parse(localStorage.getItem(PLAN_KEY)) || [];
+        
+        let editingId = null;
+
+        // Init
+        document.getElementById('current-date').innerText = new Date().toLocaleDateString('pl-PL');
+        document.getElementById('testDate').valueAsDate = new Date();
+        document.getElementById('dashboard-year-label').innerText = new Date().getFullYear();
+
+        updateDashboard();
+        renderFormOptions('form');
+
+        // --- NAVIGATION ---
+        function switchTab(id) {
+            document.querySelectorAll('[id^="view-"]').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById('view-'+id).classList.remove('hidden');
+            document.getElementById('btn-'+id).classList.add('active');
+            
+            if(id === 'schedule') renderPlans();
+            if(id === 'register') renderTable();
+            if(id === 'dashboard') updateDashboard();
+        }
+
+        // --- LOGIC: FORM RENDERER ---
+        function renderFormOptions(context) {
+            const prefix = context === 'form' ? 'item' : 'plan';
+            const radioName = context === 'form' ? 'sampleType' : 'planType';
+            const type = document.querySelector(`input[name="${radioName}"]:checked`).value;
+            const groupSelect = document.getElementById(prefix + 'Group');
+            
+            groupSelect.innerHTML = '';
+            LOGIC_MAP[type].groups.forEach(g => {
+                const opt = document.createElement('option');
+                opt.value = g;
+                opt.innerText = g;
+                groupSelect.appendChild(opt);
+            });
+
+            if (context === 'form') {
+                const batchContainer = document.getElementById('batchContainer');
+                if (type === 'product') batchContainer.classList.remove('hidden');
+                else batchContainer.classList.add('hidden');
+            }
+
+            updateCriteriaSelect(context);
+        }
+
+        function updateCriteriaSelect(context) {
+            const prefix = context === 'form' ? 'item' : 'plan';
+            const radioName = context === 'form' ? 'sampleType' : 'planType';
+            const type = document.querySelector(`input[name="${radioName}"]:checked`).value;
+            const group = document.getElementById(prefix + 'Group').value;
+            const critSelect = document.getElementById(prefix + 'Criteria');
+
+            const allowed = LOGIC_MAP[type].criteria[group] || [];
+            
+            critSelect.innerHTML = '';
+            allowed.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.val;
+                opt.innerText = c.txt;
+                critSelect.appendChild(opt);
+            });
+
+            if (context === 'form') toggleResultInput();
+        }
+
+        function toggleResultInput() {
+            const type = document.querySelector('input[name="sampleType"]:checked').value;
+            const crit = document.getElementById('itemCriteria').value;
+            const divNum = document.getElementById('resNum');
+            const divBin = document.getElementById('resBin');
+            const unitLabel = document.getElementById('unitLabel');
+
+            divNum.classList.add('hidden');
+            divBin.classList.add('hidden');
+
+            let useBinary = false;
+            let unit = '';
+
+            if (type === 'product') {
+                if (crit === 'process_hygiene') useBinary = true;
+                else if (crit === 'shelf_life') unit = 'jtk/g';
+                else if (crit === 'histamine') unit = 'mg/kg';
+                else if (crit === 'wwa') unit = 'µg/kg';
+            } 
+            else if (type === 'environment') {
+                 if (crit === 'Salmonella' || crit === 'L. monocytogenes') useBinary = true;
+                 else unit = 'jtk';
+            }
+            else if (type === 'water') {
+                // PATCH: E. coli jako Binarne (Tak/Nie) - zgodnie z sugestią audytu
+                if (crit === 'E. coli') useBinary = true;
+                else unit = 'jtk/100ml';
+            }
+
+            if (useBinary) {
+                divBin.classList.remove('hidden');
+            } else {
+                divNum.classList.remove('hidden');
+                unitLabel.innerText = unit;
+            }
+            validateResult();
+        }
+
+        function validateResult() {
+            const valNum = parseFloat(document.getElementById('valNum').value) || 0;
+            const valBin = document.getElementById('valBin').value;
+            const crit = document.getElementById('itemCriteria').value;
+
+            const isBinaryVisible = !document.getElementById('resBin').classList.contains('hidden');
+
+            let isFail = false;
+            let msg = "WYNIK ZGODNY";
+            let color = "text-green-600";
+
+            if (isBinaryVisible) {
+                if (valBin === 'present') isFail = true;
+            } else {
+                const limits = LIMITS_MAP[crit];
+                if (limits && valNum > limits.max) {
+                    isFail = true;
+                }
+            }
+
+            if (isFail) {
+                msg = "PRZEKROCZENIE / NIEZGODNOŚĆ";
+                color = "text-red-600";
+                document.getElementById('correctiveArea').classList.remove('hidden');
+                document.getElementById('correctiveActions').setAttribute('required', 'true');
+            } else {
+                document.getElementById('correctiveArea').classList.add('hidden');
+                document.getElementById('correctiveActions').removeAttribute('required');
+                document.getElementById('correctiveActions').value = '';
+            }
+
+            const preview = document.getElementById('statusPreview');
+            preview.innerText = msg;
+            preview.className = "mt-3 text-sm font-bold " + color;
+
+            return !isFail;
+        }
+
+        // --- CRUD OPERATIONS ---
+        
+        function saveEntry(e) {
+            e.preventDefault();
+            
+            const type = document.querySelector('input[name="sampleType"]:checked').value;
+            const isBinary = !document.getElementById('resBin').classList.contains('hidden');
+            
+            validateResult(); 
+            const isFail = document.getElementById('statusPreview').innerText.includes("NIEZGODNOŚĆ");
+            
+            const newVal = isBinary ? document.getElementById('valBin').value : parseFloat(document.getElementById('valNum').value);
+            const unitTxt = document.getElementById('unitLabel').innerText;
+
+            const entry = {
+                id: editingId || crypto.randomUUID(),
+                schema: '6.3',
+                date: document.getElementById('testDate').value,
+                type: type,
+                name: document.getElementById('itemName').value,
+                group: document.getElementById('itemGroup').value,
+                criteria: document.getElementById('itemCriteria').value,
+                reportId: document.getElementById('reportId').value,
+                batchId: type === 'product' ? document.getElementById('batchId').value : '-',
+                value: newVal,
+                unit: isBinary ? '-' : unitTxt,
+                isCompliant: !isFail,
+                correctiveActions: isFail ? document.getElementById('correctiveActions').value : ''
+            };
+
+            if (editingId) {
+                db = db.map(item => item.id === editingId ? entry : item);
+                alert("Zaktualizowano wpis.");
+            } else {
+                db.push(entry);
+                alert("Zapisano badanie.");
+            }
+
+            localStorage.setItem(DB_KEY, JSON.stringify(db));
+            
+            resetForm();
+            switchTab('register');
+        }
+
+        function editEntry(id) {
+            const entry = db.find(x => x.id === id);
+            if (!entry) return;
+
+            editingId = id; 
+            switchTab('add-entry');
+            document.getElementById('formTitle').innerText = "Edycja Badania (ID: " + id + ")";
+            document.getElementById('submitBtn').innerText = "Zaktualizuj wpis";
+
+            const radio = document.querySelector(`input[name="sampleType"][value="${entry.type}"]`);
+            if(radio) {
+                radio.checked = true;
+                renderFormOptions('form');
+            }
+
+            document.getElementById('itemName').value = entry.name;
+            document.getElementById('itemGroup').value = entry.group;
+            
+            updateCriteriaSelect('form');
+            document.getElementById('itemCriteria').value = entry.criteria;
+
+            document.getElementById('testDate').value = entry.date;
+            document.getElementById('reportId').value = entry.reportId || '';
+            document.getElementById('batchId').value = entry.batchId === '-' ? '' : entry.batchId;
+            document.getElementById('correctiveActions').value = entry.correctiveActions || '';
+
+            toggleResultInput(); 
+            
+            const isBinary = !document.getElementById('resBin').classList.contains('hidden');
+            if (isBinary) {
+                document.getElementById('valBin').value = entry.value;
+            } else {
+                document.getElementById('valNum').value = entry.value;
+            }
+            validateResult();
+        }
+
+        function deleteEntry(id) {
+            if(confirm("Czy na pewno usunąć ten wpis? Operacja jest nieodwracalna.")) {
+                db = db.filter(x => x.id !== id);
+                localStorage.setItem(DB_KEY, JSON.stringify(db));
+                renderTable();
+                updateDashboard();
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('haccpForm').reset();
+            document.getElementById('testDate').valueAsDate = new Date();
+            
+            editingId = null;
+            document.getElementById('formTitle').innerText = "Nowe Badanie";
+            document.getElementById('submitBtn').innerText = "Zapisz";
+            
+            const defaultRadio = document.querySelector('input[name="sampleType"][value="product"]');
+            defaultRadio.checked = true;
+            renderFormOptions('form');
+            
+            document.getElementById('correctiveArea').classList.add('hidden');
+            document.getElementById('statusPreview').innerText = "";
+        }
+
+        // --- DASHBOARD & TABLE ---
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            const term = document.getElementById('searchTable').value.toLowerCase();
+            tbody.innerHTML = '';
+
+            const sorted = [...db].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            sorted.forEach(i => {
+                const txt = (i.name + i.group + i.criteria).toLowerCase();
+                if (!txt.includes(term)) return;
+
+                const statusBadge = i.isCompliant 
+                    ? '<span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">OK</span>'
+                    : '<span class="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold">NOK</span>';
+
+                let valDisplay = typeof i.value === 'number' ? i.value + ' ' + i.unit : (i.value === 'present' ? 'WYKRYTO' : 'Nie wykryto');
+
+                const plDate = formatPLDate(i.date);
+
+                const tr = document.createElement('tr');
+                tr.className = "border-b hover:bg-gray-50 transition";
+                tr.innerHTML = `
+                    <td class="p-3 font-mono text-gray-600">${plDate}</td>
+                    <td class="p-3">
+                        <div class="font-bold text-[#004F5D]">${escapeHtml(i.name)}</div>
+                        <div class="text-xs text-gray-500">${escapeHtml(i.group)}</div>
+                        ${i.batchId !== '-' ? `<div class="text-[10px] bg-gray-100 inline-block px-1 rounded mt-1">LOT: ${escapeHtml(i.batchId)}</div>` : ''}
+                    </td>
+                    <td class="p-3">${escapeHtml(i.criteria)}</td>
+                    <td class="p-3 text-center font-bold">${valDisplay}</td>
+                    <td class="p-3 text-center">${statusBadge}</td>
+                    <td class="p-3 text-xs italic text-red-600 font-bold">${escapeHtml(i.correctiveActions||'')}</td>
+                    <td class="p-3 text-center">
+                        <div class="flex justify-center gap-3">
+                            <button onclick="editEntry('${i.id}')" class="text-blue-400 hover:text-blue-600" title="Edytuj">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteEntry('${i.id}')" class="text-red-400 hover:text-red-600" title="Usuń">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function exportToCSV() {
+            let csv = "\uFEFFData;Produkt;Grupa;Parametr;Wynik;Jedn;Status;Uwagi\n";
+            
+            db.forEach(i => {
+                let v = typeof i.value === 'number' ? i.value : (i.value==='absent'?'Nie wykryto':'WYKRYTO');
+                let s = i.isCompliant ? 'OK' : 'NOK';
+                const safe = (t) => `"${(t||'').toString().replace(/"/g, '""')}"`;
+                // PATCH: Data w CSV w formacie PL (DD.MM.YYYY)
+                csv += `${formatPLDate(i.date)};${safe(i.name)};${safe(i.group)};${safe(i.criteria)};${safe(v)};${safe(i.unit)};${s};${safe(i.correctiveActions)}\n`;
+            });
+
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+            link.download = `Rejestr_INOVIT_${new Date().toISOString().slice(0,10)}.csv`;
+            link.click();
+        }
+
+        function updateDashboard() {
+            const ok = db.filter(x => x.isCompliant).length;
+            const fail = db.filter(x => !x.isCompliant).length;
+            
+            animateValue("stat-ok", parseInt(document.getElementById("stat-ok").innerText), ok, 1000);
+            animateValue("stat-fail", parseInt(document.getElementById("stat-fail").innerText), fail, 1000);
+
+            if (db.length > 0) {
+                const last = [...db].sort((a,b) => new Date(b.date) - new Date(a.date))[0];
+                document.getElementById('stat-last-date').innerText = formatPLDate(last.date);
+            }
+
+            const currentYear = new Date().getFullYear();
+            const plansThisYear = plans.filter(p => p.year == currentYear);
+            const yearPrefix = `${currentYear}-`;
+            
+            let totalNeeded = 0;
+            plansThisYear.forEach(p => p.items.forEach(it => totalNeeded += parseInt(it.freq)));
+
+            let totalDone = 0;
+            plansThisYear.forEach(p => {
+                p.items.forEach(it => {
+                    const count = db.filter(x =>
+                        x.date.startsWith(yearPrefix) &&
+                        x.group === it.group &&
+                        x.criteria === it.criteria
+                    ).length;
+                    totalDone += Math.min(count, parseInt(it.freq));
+                });
+            });
+            
+            let progress = totalNeeded > 0 ? Math.round((totalDone / totalNeeded) * 100) : 0;
+            if (progress > 100) progress = 100;
+
+            document.getElementById('stat-plan-progress').innerText = progress + "%";
+            document.getElementById('progress-bar-visual').style.width = progress + "%";
+
+            updateChart();
+            checkTrends();
+        }
+
+        // --- CHART & TRENDS ---
+        let myChart = null;
+
+        function updateChart() {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            const criteria = document.getElementById('chartFilter').value;
+
+            let dataPoints = db
+                .filter(x => x.criteria === criteria && typeof x.value === 'number')
+                .sort((a,b) => new Date(a.date) - new Date(b.date))
+                .slice(-10);
+
+            const labels = dataPoints.map(x => x.date.slice(5)); 
+            const values = dataPoints.map(x => x.value);
+
+            if (myChart) myChart.destroy();
+
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Wynik',
+                        data: values,
+                        borderColor: '#004F5D',
+                        backgroundColor: 'rgba(0, 79, 93, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: {display: false} },
+                    scales: { 
+                        y: { 
+                            beginAtZero: true,
+                            // PATCH: Opis osi Y
+                            title: { display: true, text: 'Wartość parametru' }
+                        } 
+                    }
+                }
+            });
+        }
+
+        function checkTrends() {
+            let alerts = 0;
+
+            const crits = [...new Set(db
+                .filter(x => typeof x.value === 'number')
+                .map(x => x.criteria)
+            )];
+
+            crits.forEach(c => {
+                const last = db
+                    .filter(x => x.criteria === c && typeof x.value === 'number')
+                    .sort((a,b) => new Date(a.date) - new Date(b.date))
+                    .slice(-3);
+
+                if (last.length === 3 &&
+                    last[0].value < last[1].value &&
+                    last[1].value < last[2].value
+                ) alerts++;
+            });
+
+            document.getElementById('stat-trend-count').innerText = alerts;
+        }
+
+        function animateValue(id, start, end, duration) {
+            if (start === end) return;
+            const obj = document.getElementById(id);
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor(progress * (end - start) + start);
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        // --- PLANS MANAGEMENT ---
+        function openNewPlanModal() { document.getElementById('modalNewPlan').classList.remove('hidden'); }
+        function createNewPlan() {
+            const y = document.getElementById('newPlanYear').value;
+            plans.push({ id: Date.now(), year: y, items: [] });
+            localStorage.setItem(PLAN_KEY, JSON.stringify(plans));
+            document.getElementById('modalNewPlan').classList.add('hidden');
+            renderPlans();
+        }
+        
+        function renderPlans() {
+            const c = document.getElementById('plansContainer');
+            c.innerHTML = '';
+            plans.forEach(p => {
+                const div = document.createElement('div');
+                div.className = "bg-white p-6 rounded-xl shadow border border-gray-100";
+                div.innerHTML = `
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-lg text-[#004F5D]">Plan na rok ${p.year}</h3>
+                        <button onclick="openAddItemModal(${p.id})" class="text-sm text-blue-500 font-bold hover:underline">+ Dodaj pozycję</button>
+                    </div>
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50 text-gray-500"><tr><th class="text-left p-2">Grupa</th><th class="text-left p-2">Kryterium</th><th class="text-right p-2">Ilość</th></tr></thead>
+                        <tbody>
+                            ${p.items.map(it => `<tr><td class="p-2 border-b">${it.group}</td><td class="p-2 border-b">${it.criteria}</td><td class="p-2 border-b text-right font-bold">${it.freq}</td></tr>`).join('')}
+                        </tbody>
+                    </table>
+                    <div class="mt-4 text-right">
+                         <button onclick="deletePlan(${p.id})" class="text-xs text-red-400 hover:text-red-600">Usuń plan</button>
+                    </div>
+                `;
+                c.appendChild(div);
+            });
+        }
+
+        function deletePlan(id) {
+            if(confirm("Usunąć plan?")) {
+                plans = plans.filter(x => x.id !== id);
+                localStorage.setItem(PLAN_KEY, JSON.stringify(plans));
+                renderPlans();
+            }
+        }
+
+        function openAddItemModal(planId) {
+            document.getElementById('targetPlanId').value = planId;
+            const plan = plans.find(p => p.id === planId);
+            if (!plan) {
+                alert("Ten plan już nie istnieje. Odśwież widok.");
+                return;
+            }
+            document.getElementById('modalPlanYear').innerText = plan.year;
+            document.getElementById('modalAddItem').classList.remove('hidden');
+            renderFormOptions('plan');
+        }
+        function closeAddItemModal() { document.getElementById('modalAddItem').classList.add('hidden'); }
+        
+        function addItemToPlan(e) {
+            e.preventDefault();
+            const pid = parseInt(document.getElementById('targetPlanId').value);
+            const plan = plans.find(p => p.id === pid);
+            
+            if (!plan) return;
+
+            const newItem = {
+                type: document.querySelector('input[name="planType"]:checked').value,
+                group: document.getElementById('planGroup').value,
+                criteria: document.getElementById('planCriteria').value,
+                freq: document.getElementById('planFreq').value
+            };
+            
+            plan.items.push(newItem);
+            localStorage.setItem(PLAN_KEY, JSON.stringify(plans));
+            closeAddItemModal();
+            renderPlans();
+        }
+
+    </script>
+</body>
+</html>
