@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rejestr badań L. monocytogenes | ELMAR</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --accent: #006d77;
+      --accent-dark: #014e55;
+      --warning: #f2b705;
+      --danger: #e63946;
+      --success: #1b9c5a;
+      --text: #102a43;
+      --muted: #627d98;
+      --line: #e2e8f0;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    header {
+      background: linear-gradient(120deg, var(--accent), var(--accent-dark));
+      color: #fff;
+      padding: 24px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    header .title {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    header .badge {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 6px 12px;
+      font-size: 12px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    nav {
+      display: flex;
+      gap: 16px;
+      background: #fff;
+      padding: 12px 40px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    nav button {
+      border: none;
+      background: transparent;
+      font-size: 15px;
+      padding: 12px 18px;
+      border-bottom: 3px solid transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    nav button.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+      font-weight: 600;
+    }
+
+    main {
+      padding: 24px 40px 80px;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+      border: 1px solid var(--line);
+    }
+
+    .card h3 {
+      margin-top: 0;
+    }
+
+    .trend-banner {
+      background: #fff7e6;
+      border: 1px solid #ffe3a3;
+      color: #7a4b00;
+      padding: 14px 18px;
+      border-radius: 12px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      font-size: 14px;
+    }
+
+    .stat {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .stat .value {
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 12px;
+      background: #f1f5f9;
+      color: var(--muted);
+    }
+
+    .pill.success {
+      background: rgba(27, 156, 90, 0.12);
+      color: var(--success);
+    }
+
+    .pill.warning {
+      background: rgba(242, 183, 5, 0.15);
+      color: #9a6a00;
+    }
+
+    .pill.danger {
+      background: rgba(230, 57, 70, 0.15);
+      color: var(--danger);
+    }
+
+    .section {
+      display: none;
+      animation: fadeIn 0.25s ease;
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    form {
+      display: grid;
+      gap: 12px;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      font-size: 14px;
+      background: #fff;
+    }
+
+    textarea {
+      min-height: 90px;
+    }
+
+    button.primary {
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #fff;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+    }
+
+    .chart {
+      height: 260px;
+    }
+
+    footer {
+      padding: 24px 40px 40px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .required::after {
+      content: " *";
+      color: var(--danger);
+    }
+
+    .inline {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .legend {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      font-size: 12px;
+    }
+
+    .legend span {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      display: inline-block;
+      margin-right: 6px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title">
+      <div class="badge">INOVIT / ELMAR</div>
+      <div>
+        <h1 style="margin: 0; font-size: 20px;">Rejestr badań L. monocytogenes</h1>
+        <div style="font-size: 12px; opacity: 0.8;">Zgodność z Rozp. (WE) 2073/2005 | HACCP / GMP / GHP</div>
+      </div>
+    </div>
+    <div style="text-align: right;">
+      <div class="muted" style="color: #fff;">Dzisiaj jest</div>
+      <div style="font-size: 18px; font-weight: 600;" id="today"></div>
+    </div>
+  </header>
+
+  <nav>
+    <button class="active" data-tab="dashboard">Pulpit & Trendy</button>
+    <button data-tab="new-entry">Nowe badanie</button>
+    <button data-tab="register">Rejestr & Excel</button>
+  </nav>
+
+  <main>
+    <section id="dashboard" class="section active">
+      <div id="trend-banner" class="trend-banner" style="display: none;"></div>
+      <div class="grid" style="margin-top: 18px;">
+        <div class="card">
+          <div class="stat">
+            <div>
+              <div class="muted">Wyniki zgodne</div>
+              <div class="value" id="stat-ok">0</div>
+            </div>
+            <div class="pill success">OK</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="stat">
+            <div>
+              <div class="muted">Niezgodne</div>
+              <div class="value" id="stat-nok">0</div>
+            </div>
+            <div class="pill danger">ALERT</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="stat">
+            <div>
+              <div class="muted">Odsetek błędów (YTD)</div>
+              <div class="value" id="stat-rate">0%</div>
+              <div class="muted">Cel: 0%</div>
+            </div>
+            <div class="pill warning">monitoring</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="stat">
+            <div>
+              <div class="muted">Ostatni wpis</div>
+              <div class="value" id="stat-last">-</div>
+              <div class="muted">Aktualność danych</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="two-col" style="margin-top: 24px;">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+            <h3 style="margin: 0;">Analiza Trendu: L. monocytogenes (przechowalnicze)</h3>
+            <span class="pill">Limit: 100 jtk/g</span>
+          </div>
+          <canvas id="trend-chart" class="chart"></canvas>
+          <div class="legend">
+            <span style="background: var(--accent);"></span> Wyniki w normie
+            <span style="background: var(--warning);"></span> Ostrzeżenie trendu
+            <span style="background: var(--danger);"></span> Niezgodne (>100 jtk/g)
+          </div>
+        </div>
+        <div class="card" style="background: var(--accent-dark); color: #fff;">
+          <h3>Monitoring trendów</h3>
+          <p style="opacity: 0.8;">System analizuje 3 ostatnie wyniki dla każdej grupy technologicznej. Stały wzrost (np. 40 → 60 → 70 jtk/g) wywołuje ostrzeżenie zgodne z wymogami Rozp. (WE) 2073/2005.</p>
+          <div style="margin-top: 20px; background: rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; text-align: center;">
+            <div style="font-size: 32px; font-weight: 700;" id="trend-count">0</div>
+            <div style="font-size: 12px; opacity: 0.8;">AKTYWNE OSTRZEŻENIA</div>
+          </div>
+          <ul id="trend-list" style="margin-top: 18px; padding-left: 18px;"></ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="new-entry" class="section">
+      <div class="two-col">
+        <div class="card">
+          <h3>Nowe badanie produktu</h3>
+          <form id="product-form">
+            <div>
+              <label class="required" for="product-group">Grupa technologiczna</label>
+              <input id="product-group" required placeholder="np. Ryby wędzone" />
+            </div>
+            <div>
+              <label class="required" for="product-name">Produkt</label>
+              <input id="product-name" required placeholder="np. Łosoś wędzony" />
+            </div>
+            <div class="inline">
+              <div style="flex: 1;">
+                <label class="required" for="product-date">Data badania</label>
+                <input id="product-date" type="date" required />
+              </div>
+              <div style="flex: 1;">
+                <label class="required" for="product-type">Rodzaj badania</label>
+                <select id="product-type" required>
+                  <option value="process">Skuteczność procesu (nieobecność w 25g)</option>
+                  <option value="storage">Przechowalnicze (jtk/g na koniec okresu)</option>
+                </select>
+              </div>
+            </div>
+            <div id="product-result-wrapper"></div>
+            <div>
+              <label for="product-notes">Uwagi</label>
+              <textarea id="product-notes" placeholder="Dodatkowe informacje (np. seria, partia)"></textarea>
+            </div>
+            <div>
+              <label class="required" for="product-corrective">Działania korygujące (wymagane przy niezgodności)</label>
+              <textarea id="product-corrective" placeholder="Opis działań korygujących"></textarea>
+            </div>
+            <button class="primary" type="submit">Dodaj badanie produktu</button>
+            <div class="muted">Wymogi: Rozdzielone limity dla skuteczności procesu (0/25g) i przechowalnictwa (&lt;100 jtk/g).</div>
+          </form>
+        </div>
+
+        <div class="card">
+          <h3>Nowe badanie środowiskowe (wymaz)</h3>
+          <form id="swab-form">
+            <div>
+              <label class="required" for="swab-location">Miejsce pobrania</label>
+              <input id="swab-location" required placeholder="np. Krajalnia - stół pakowania" />
+            </div>
+            <div>
+              <label for="swab-description">Opis</label>
+              <input id="swab-description" placeholder="np. strefa czysta / brudna" />
+            </div>
+            <div class="inline">
+              <div style="flex: 1;">
+                <label class="required" for="swab-date">Data pobrania</label>
+                <input id="swab-date" type="date" required />
+              </div>
+              <div style="flex: 1;">
+                <label class="required" for="swab-target">Kierunek badań</label>
+                <select id="swab-target" required>
+                  <option value="listeria">L. monocytogenes</option>
+                  <option value="listeria-spp">Listeria spp.</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="required" for="swab-result">Wynik</label>
+              <select id="swab-result" required>
+                <option value="negative">Nieobecność</option>
+                <option value="positive">Obecność</option>
+              </select>
+            </div>
+            <div>
+              <label class="required" for="swab-corrective">Działania korygujące (wymagane przy niezgodności)</label>
+              <textarea id="swab-corrective" placeholder="Opis działań korygujących"></textarea>
+            </div>
+            <button class="primary" type="submit">Dodaj wymaz</button>
+            <div class="muted">Wynik dodatni w środowisku wymaga natychmiastowych działań korygujących.</div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section id="register" class="section">
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+          <div>
+            <h3 style="margin-bottom: 4px;">Rejestr badań</h3>
+            <div class="muted">Dane przechowywane lokalnie w przeglądarce (LocalStorage).</div>
+          </div>
+          <div class="inline">
+            <button class="secondary" id="export-products">Eksportuj produkty (CSV)</button>
+            <button class="secondary" id="export-swabs">Eksportuj wymazy (CSV)</button>
+          </div>
+        </div>
+
+        <h4>Produkty</h4>
+        <table id="products-table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Grupa</th>
+              <th>Produkt</th>
+              <th>Rodzaj badania</th>
+              <th>Wynik</th>
+              <th>Status</th>
+              <th>Działania korygujące</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+
+        <h4 style="margin-top: 24px;">Wymazy środowiskowe</h4>
+        <table id="swabs-table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Miejsce</th>
+              <th>Opis</th>
+              <th>Kierunek</th>
+              <th>Wynik</th>
+              <th>Status</th>
+              <th>Działania korygujące</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    2026 © INOVIT | Aplikacja ad hoc dla zakładów pod nadzorem weterynaryjnym.
+  </footer>
+
+  <script>
+    const storageKey = "elmar-listeria-records";
+
+    const initialState = {
+      products: [],
+      swabs: []
+    };
+
+    const state = JSON.parse(localStorage.getItem(storageKey)) || initialState;
+
+    const todayEl = document.getElementById("today");
+    const tabButtons = document.querySelectorAll("nav button");
+    const sections = document.querySelectorAll(".section");
+
+    const productForm = document.getElementById("product-form");
+    const swabForm = document.getElementById("swab-form");
+
+    const productResultWrapper = document.getElementById("product-result-wrapper");
+    const productTypeSelect = document.getElementById("product-type");
+
+    const trendBanner = document.getElementById("trend-banner");
+    const trendCount = document.getElementById("trend-count");
+    const trendList = document.getElementById("trend-list");
+
+    const productsTableBody = document.querySelector("#products-table tbody");
+    const swabsTableBody = document.querySelector("#swabs-table tbody");
+
+    const exportProductsButton = document.getElementById("export-products");
+    const exportSwabsButton = document.getElementById("export-swabs");
+
+    const statOk = document.getElementById("stat-ok");
+    const statNok = document.getElementById("stat-nok");
+    const statRate = document.getElementById("stat-rate");
+    const statLast = document.getElementById("stat-last");
+
+    const chartCanvas = document.getElementById("trend-chart");
+    const chartCtx = chartCanvas.getContext("2d");
+
+    const formatDate = (value) => {
+      if (!value) return "-";
+      const date = new Date(value);
+      return date.toLocaleDateString("pl-PL", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      });
+    };
+
+    const saveState = () => {
+      localStorage.setItem(storageKey, JSON.stringify(state));
+    };
+
+    const setToday = () => {
+      const now = new Date();
+      todayEl.textContent = now.toLocaleDateString("pl-PL", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      });
+    };
+
+    const getProductResultInput = () => {
+      if (productTypeSelect.value === "process") {
+        return `
+          <div>
+            <label class="required" for="product-result">Wynik (L. monocytogenes w 25g)</label>
+            <select id="product-result" required>
+              <option value="absent">Nieobecność w 25g</option>
+              <option value="present">Obecność w 25g</option>
+            </select>
+          </div>
+        `;
+      }
+      return `
+        <div>
+          <label class="required" for="product-result">Wynik (jtk/g)</label>
+          <input id="product-result" type="number" min="0" step="1" placeholder="np. 45" required />
+        </div>
+      `;
+    };
+
+    const renderProductResult = () => {
+      productResultWrapper.innerHTML = getProductResultInput();
+    };
+
+    const evaluateProductStatus = (entry) => {
+      if (entry.type === "process") {
+        return entry.result === "absent" ? "Zgodny" : "Niezgodny";
+      }
+      const value = Number(entry.result);
+      return value <= 100 ? "Zgodny" : "Niezgodny";
+    };
+
+    const evaluateSwabStatus = (entry) => {
+      return entry.result === "negative" ? "Zgodny" : "Niezgodny";
+    };
+
+    const buildTrendAnalysis = () => {
+      const storageResults = state.products
+        .filter((item) => item.type === "storage")
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      const grouped = storageResults.reduce((acc, item) => {
+        acc[item.group] = acc[item.group] || [];
+        acc[item.group].push(item);
+        return acc;
+      }, {});
+
+      const warnings = [];
+      Object.entries(grouped).forEach(([group, entries]) => {
+        if (entries.length < 3) return;
+        const lastThree = entries.slice(-3);
+        const values = lastThree.map((entry) => Number(entry.result));
+        const isIncreasing = values[0] < values[1] && values[1] < values[2];
+        const withinLimit = values.every((value) => value <= 100);
+        if (isIncreasing && withinLimit) {
+          warnings.push({
+            group,
+            values
+          });
+        }
+      });
+      return warnings;
+    };
+
+    const renderTrendBanner = (warnings) => {
+      if (warnings.length === 0) {
+        trendBanner.style.display = "none";
+        return;
+      }
+      const last = warnings[0];
+      trendBanner.style.display = "flex";
+      trendBanner.innerHTML = `
+        <strong>Wykryto trend wzrostowy:</strong> Grupa "${last.group}" | Ostatnie wyniki: ${last.values.join(" → ")} jtk/g. Wymagany przegląd higieny.
+      `;
+    };
+
+    const renderTrendList = (warnings) => {
+      trendList.innerHTML = "";
+      warnings.forEach((warning) => {
+        const li = document.createElement("li");
+        li.textContent = `${warning.group}: ${warning.values.join(" → ")} jtk/g`;
+        trendList.appendChild(li);
+      });
+      if (warnings.length === 0) {
+        const li = document.createElement("li");
+        li.textContent = "Brak aktywnych trendów wzrostowych.";
+        trendList.appendChild(li);
+      }
+      trendCount.textContent = warnings.length;
+    };
+
+    const drawTrendChart = (warnings) => {
+      const data = state.products
+        .filter((item) => item.type === "storage")
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .slice(-12);
+
+      const width = chartCanvas.clientWidth;
+      const height = chartCanvas.clientHeight;
+      chartCanvas.width = width;
+      chartCanvas.height = height;
+
+      chartCtx.clearRect(0, 0, width, height);
+
+      const maxValue = Math.max(120, ...data.map((item) => Number(item.result) || 0));
+      const chartPadding = 32;
+      const barWidth = (width - chartPadding * 2) / Math.max(data.length, 1);
+
+      chartCtx.strokeStyle = "#e2e8f0";
+      chartCtx.lineWidth = 1;
+      for (let i = 0; i <= 5; i += 1) {
+        const y = chartPadding + (i * (height - chartPadding * 2)) / 5;
+        chartCtx.beginPath();
+        chartCtx.moveTo(chartPadding, y);
+        chartCtx.lineTo(width - chartPadding, y);
+        chartCtx.stroke();
+      }
+
+      chartCtx.fillStyle = "#94a3b8";
+      chartCtx.font = "12px Inter, sans-serif";
+      chartCtx.textAlign = "right";
+      chartCtx.textBaseline = "middle";
+      chartCtx.fillText("100", chartPadding - 6, chartPadding + ((height - chartPadding * 2) * (1 - 100 / maxValue)));
+
+      data.forEach((entry, index) => {
+        const value = Number(entry.result) || 0;
+        const barHeight = ((height - chartPadding * 2) * value) / maxValue;
+        const x = chartPadding + index * barWidth + barWidth * 0.15;
+        const y = height - chartPadding - barHeight;
+
+        const warningGroup = warnings.find((warning) => warning.group === entry.group && warning.values.includes(value));
+
+        if (value > 100) {
+          chartCtx.fillStyle = "#e63946";
+        } else if (warningGroup) {
+          chartCtx.fillStyle = "#f2b705";
+        } else {
+          chartCtx.fillStyle = "#006d77";
+        }
+        chartCtx.fillRect(x, y, barWidth * 0.7, barHeight);
+
+        chartCtx.fillStyle = "#475569";
+        chartCtx.font = "11px Inter, sans-serif";
+        chartCtx.textAlign = "center";
+        chartCtx.fillText(formatDate(entry.date).slice(0, 5), x + barWidth * 0.35, height - 8);
+      });
+    };
+
+    const updateStats = () => {
+      const allRecords = [...state.products, ...state.swabs];
+      const okCount = allRecords.filter((record) => record.status === "Zgodny").length;
+      const nokCount = allRecords.filter((record) => record.status === "Niezgodny").length;
+      const totalCount = allRecords.length || 1;
+      statOk.textContent = okCount;
+      statNok.textContent = nokCount;
+      statRate.textContent = `${((nokCount / totalCount) * 100).toFixed(1)}%`;
+      const last = allRecords.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+      statLast.textContent = last ? formatDate(last.date) : "-";
+    };
+
+    const renderTables = () => {
+      productsTableBody.innerHTML = "";
+      state.products
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .forEach((item) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${formatDate(item.date)}</td>
+            <td>${item.group}</td>
+            <td>${item.product}</td>
+            <td>${item.type === "process" ? "Skuteczność procesu" : "Przechowalnicze"}</td>
+            <td>${item.type === "process" ? (item.result === "absent" ? "Nieobecność w 25g" : "Obecność w 25g") : `${item.result} jtk/g`}</td>
+            <td><span class="pill ${item.status === "Zgodny" ? "success" : "danger"}">${item.status}</span></td>
+            <td>${item.corrective || "-"}</td>
+          `;
+          productsTableBody.appendChild(row);
+        });
+
+      swabsTableBody.innerHTML = "";
+      state.swabs
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .forEach((item) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${formatDate(item.date)}</td>
+            <td>${item.location}</td>
+            <td>${item.description || "-"}</td>
+            <td>${item.target === "listeria" ? "L. monocytogenes" : "Listeria spp."}</td>
+            <td>${item.result === "negative" ? "Nieobecność" : "Obecność"}</td>
+            <td><span class="pill ${item.status === "Zgodny" ? "success" : "danger"}">${item.status}</span></td>
+            <td>${item.corrective || "-"}</td>
+          `;
+          swabsTableBody.appendChild(row);
+        });
+    };
+
+    const updateDashboard = () => {
+      const warnings = buildTrendAnalysis();
+      renderTrendBanner(warnings);
+      renderTrendList(warnings);
+      drawTrendChart(warnings);
+      updateStats();
+    };
+
+    const resetForm = (form) => {
+      form.reset();
+      renderProductResult();
+    };
+
+    const validateCorrective = (status, correctiveField) => {
+      if (status === "Niezgodny" && !correctiveField.value.trim()) {
+        correctiveField.setCustomValidity("Podaj działania korygujące zgodnie z wymaganiami prawnymi.");
+      } else {
+        correctiveField.setCustomValidity("");
+      }
+    };
+
+    productForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const entry = {
+        group: document.getElementById("product-group").value.trim(),
+        product: document.getElementById("product-name").value.trim(),
+        date: document.getElementById("product-date").value,
+        type: productTypeSelect.value,
+        result: document.getElementById("product-result").value,
+        notes: document.getElementById("product-notes").value.trim(),
+        corrective: document.getElementById("product-corrective").value.trim(),
+        createdAt: new Date().toISOString()
+      };
+      entry.status = evaluateProductStatus(entry);
+
+      const correctiveField = document.getElementById("product-corrective");
+      validateCorrective(entry.status, correctiveField);
+      if (!productForm.reportValidity()) {
+        return;
+      }
+
+      state.products.push(entry);
+      saveState();
+      resetForm(productForm);
+      renderTables();
+      updateDashboard();
+    });
+
+    swabForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const entry = {
+        location: document.getElementById("swab-location").value.trim(),
+        description: document.getElementById("swab-description").value.trim(),
+        date: document.getElementById("swab-date").value,
+        target: document.getElementById("swab-target").value,
+        result: document.getElementById("swab-result").value,
+        corrective: document.getElementById("swab-corrective").value.trim(),
+        createdAt: new Date().toISOString()
+      };
+      entry.status = evaluateSwabStatus(entry);
+
+      const correctiveField = document.getElementById("swab-corrective");
+      validateCorrective(entry.status, correctiveField);
+      if (!swabForm.reportValidity()) {
+        return;
+      }
+
+      state.swabs.push(entry);
+      saveState();
+      resetForm(swabForm);
+      renderTables();
+      updateDashboard();
+    });
+
+    productTypeSelect.addEventListener("change", renderProductResult);
+
+    tabButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        tabButtons.forEach((btn) => btn.classList.remove("active"));
+        button.classList.add("active");
+        const tab = button.dataset.tab;
+        sections.forEach((section) => {
+          section.classList.toggle("active", section.id === tab);
+        });
+      });
+    });
+
+    const exportCSV = (records, headers, filename) => {
+      const rows = [headers.join(";")];
+      records.forEach((record) => {
+        const row = headers.map((key) => `"${String(record[key] ?? "").replace(/"/g, '""')}"`);
+        rows.push(row.join(";"));
+      });
+      const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    };
+
+    exportProductsButton.addEventListener("click", () => {
+      const data = state.products.map((item) => ({
+        data: formatDate(item.date),
+        grupa: item.group,
+        produkt: item.product,
+        rodzaj: item.type === "process" ? "Skuteczność procesu" : "Przechowalnicze",
+        wynik: item.type === "process" ? (item.result === "absent" ? "Nieobecność w 25g" : "Obecność w 25g") : `${item.result} jtk/g`,
+        status: item.status,
+        korekty: item.corrective
+      }));
+      exportCSV(data, ["data", "grupa", "produkt", "rodzaj", "wynik", "status", "korekty"], "rejestr-produkty.csv");
+    });
+
+    exportSwabsButton.addEventListener("click", () => {
+      const data = state.swabs.map((item) => ({
+        data: formatDate(item.date),
+        miejsce: item.location,
+        opis: item.description,
+        kierunek: item.target === "listeria" ? "L. monocytogenes" : "Listeria spp.",
+        wynik: item.result === "negative" ? "Nieobecność" : "Obecność",
+        status: item.status,
+        korekty: item.corrective
+      }));
+      exportCSV(data, ["data", "miejsce", "opis", "kierunek", "wynik", "status", "korekty"], "rejestr-wymazy.csv");
+    });
+
+    setToday();
+    renderProductResult();
+    renderTables();
+    updateDashboard();
+  </script>
+</body>
+</html>
